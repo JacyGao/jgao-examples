@@ -11,9 +11,9 @@ type Config struct {
 }
 
 type gateway struct {
-	c    Config
-	st   Store
-	http HTTPAPI
+	c  Config
+	st Store
+	f  Fetch
 }
 
 type Store interface {
@@ -21,12 +21,12 @@ type Store interface {
 	Get(key string, doc interface{}) error
 }
 
-type HTTPAPI interface {
-	Get(url string, res interface{}) error
+type Fetch interface {
+	Get(key string, url string, res interface{}) error
 	Post(body []byte, url string, res interface{}) error
 }
 
-func NewGateway(c Config, st Store, http HTTPAPI) *gateway {
+func NewGateway(c Config, st Store, http Fetch) *gateway {
 	return &gateway{
 		c,
 		st,
@@ -37,7 +37,7 @@ func NewGateway(c Config, st Store, http HTTPAPI) *gateway {
 func (gw *gateway) GetUser(pbu *UserReq) (*User, error) {
 	// Get user info from rest endpoint
 	user := &User{}
-	if err := gw.http.Get(gw.c.GetUserURL, &user); err != nil {
+	if err := gw.f.Get(pbu.Id, gw.c.GetUserURL, &user); err != nil {
 		return nil, err
 	}
 	// Store user
@@ -60,7 +60,7 @@ func (gw *gateway) AddUser(key string) (*UserRes, error) {
 		return nil, err
 	}
 	res := &UserRes{}
-	if err := gw.http.Post(body, gw.c.PostUserURL, &res); err != nil {
+	if err := gw.f.Post(body, gw.c.PostUserURL, &res); err != nil {
 		return nil, err
 	}
 	return res, nil
